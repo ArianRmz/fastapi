@@ -1,0 +1,71 @@
+variables:
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE/fastapi-app"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+image: docker:24.0.2
+
+services:
+  - docker:24.0.2-dind
+  - name: redis:7-alpine
+    alias: redis
+
+stages:
+  - lint
+  - test
+  - build
+
+# -----------------------------------
+# Lint Stage (Parallel for multiple linters)
+# -----------------------------------
+lint:
+  stage: lint
+  image: python:3.9-slim
+  parallel: 2  # could run multiple lint configs in parallel
+  script:
+    - python -m pip install --upgrade pip
+    - pip install flake8 black
+    - flake8 . --max-line-length=120
+    - black --check .
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+  allow_failure: false
+
+# -----------------------------------
+# Test Stage (Parallel for fast execution)
+# -----------------------------------
+test:
+  stage: test
+  image: python:3.9-slim
+  services:
+    - name: redis:7-alpine
+      alias: redis
+  cache:
+    key: pip-cache
+    paths:
+      - .cache/pip
+  parallel: 2  # run tests in two shards if needed
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt pytest
+    - pytest --maxfail=1 --disable-warnings -v
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+  allow_failure: false
+
+# -----------------------------------
+# Docker Build Stage
+# -----------------------------------
+build:
+  stage: build
+  image: docker:24.0.2
+  services:
+    - docker:24.0.2-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHA .
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHA
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  allow_failure: false
+

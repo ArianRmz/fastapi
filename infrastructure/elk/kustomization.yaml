@@ -1,0 +1,9 @@
+resources:
+  - elasticsearch-deployment.yaml
+  - elasticsearch-service.yaml
+  - logstash-deployment.yaml
+  - logstash-configmap.yaml
+  - logstash-service.yaml
+  - kibana-deployment.yaml
+  - kibana-service.yaml
+
