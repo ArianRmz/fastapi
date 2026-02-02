@@ -12,5 +12,4 @@ This architecture ensures **scalable, efficient, and performance-optimized deplo
 For **full implementation details, repository structure, manifests, scripts, and instructions**, please refer to the [project guide](project_1_documentation.md).
 
 
-Arian Ramezani
-Feb 2026
+Arian Ramezani -- Feb 2026
